@@ -30,8 +30,8 @@ class GoogleSheets {
             key: keys.private_key,
             scopes: this.SCOPES,
         })
-        const sheets = google.sheets({ version: 'v4', auth: client });
-        return sheets
+        this.sheets = google.sheets({ version: 'v4', auth: client });
+        return this.sheets
     }
 
     /**
