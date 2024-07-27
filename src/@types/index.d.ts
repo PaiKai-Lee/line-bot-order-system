@@ -34,5 +34,3 @@ export type OrderItem = {
     remark: string;
     created_at: Date;
 }
-
-export type OrderWithItems = Pick<OrderItem, 'id' | 'user_id' | 'user_name' | 'product_name' | 'quantity' | 'remark'> & { order_id: string, status: number }

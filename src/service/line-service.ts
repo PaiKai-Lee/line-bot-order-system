@@ -8,7 +8,6 @@ import {
 } from '@line/bot-sdk';
 import getHelpFlexMessage from '../flexMessages/helpFlexMessage';
 import getOrderFlexMessage from '../flexMessages/orderFlexMessage';
-import { OrderItem } from '../@types';
 
 const clientConfig: ClientConfig = {
     channelAccessToken: process.env.LINE_ACCESS_TOKEN || '',
@@ -102,11 +101,6 @@ class LineService {
         } else if (action === ACTIONS.OrderSearch) {
             const orderId = textMessage.split(ACTIONS.OrderSearch)[1].trim();
 
-            // const [results, err] = await orderService.getOrderWithItemsByOrderId(orderId)
-            // if (err) {
-            //     console.error('訂單搜尋異常:', err);
-            //     return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: '訂單搜尋異常' }] });
-            // }
             const [
                 [orderResult, orderError],
                 [orderItemsResults, orderItemsError]

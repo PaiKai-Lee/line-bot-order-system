@@ -1,5 +1,5 @@
 import pool from '../database';
-import { OrderWithItems, OrderItem } from '../@types';
+import {  OrderItem } from '../@types';
 import { ResultSetHeader, Pool, RowDataPacket } from 'mysql2/promise';
 import { EventEmitter } from 'node:events';
 import { ORDER_STATUS } from '../utils/constant';
