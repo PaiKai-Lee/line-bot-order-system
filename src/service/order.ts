@@ -129,7 +129,10 @@ class OrderService extends EventEmitter {
     async getLastUnfinishedOrder(): Promise<SuccessResponse<QueryResult> | ErrorResponse> {
         try {
             const query = 'SELECT * FROM orders WHERE status = 0 ORDER BY id DESC';
-            const [result, fields] = await this.pool.query(query);
+    async cancelOrderByOrderId(orderId: string): Promise<SuccessResponse<ResultSetHeader> | ErrorResponse> {
+        try {
+            const query = 'UPDATE orders SET status = 2 WHERE order_id = ? AND status = 0';
+            const [result, fields] = await this.pool.query<ResultSetHeader>(query, [orderId]);
             return [result, null]
         } catch (err) {
             return [null, err as Error]

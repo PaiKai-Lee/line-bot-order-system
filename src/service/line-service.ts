@@ -109,6 +109,18 @@ class LineService {
             const orderFlexMessage = getOrderFlexMessage(messageContent)
             // @ts-ignore
             return this.client.replyMessage({ replyToken, messages: [orderFlexMessage] });
+        } else if (action === ACTIONS.OrderCancel) {
+            const orderId = textMessage.split(ACTIONS.OrderCancel)[1].trim();
+
+            const [result, err] = await orderService.cancelOrderByOrderId(orderId)
+            if (err) {
+                console.error('訂單取消異常:', err);
+                return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: '訂單取消異常' }] });
+            }
+
+            if (result.affectedRows === 0) return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: `無法取消訂單，單號: ${orderId}` }] });
+
+            return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: `已取消訂單，單號: ${orderId}` }] });
         } else if (action === ACTIONS.ItemDelete) {
             if (!this.groupCurrentOrderId[groupId]) return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: '尚無購物清單，請先創建購物清單' }] });
             const itemNumber = textMessage.split(ACTIONS.ItemDelete)[1].trim();
