@@ -1,7 +1,8 @@
 import pool from '../database';
-import { OrderItem, OrderWithItems } from '../@types';
-import { QueryResult, ResultSetHeader, Pool } from 'mysql2/promise';
+import { OrderWithItems, OrderItem } from '../@types';
+import { ResultSetHeader, Pool, RowDataPacket } from 'mysql2/promise';
 import { EventEmitter } from 'node:events';
+import { ORDER_STATUS } from '../utils/constant';
 type SuccessResponse<T> = [T, null];
 type ErrorResponse = [null, Error];
 
@@ -16,17 +17,44 @@ class OrderService extends EventEmitter {
         try {
             const orderId = this.generateOrderId()
             const query = 'INSERT INTO orders (group_id, order_id, status) VALUES (?,?,?)';
-            const _ = await this.pool.query(query, [groupId, orderId, 0])
+            const _ = await this.pool.query(query, [groupId, orderId, ORDER_STATUS.New]);
             return [orderId, null]
         } catch (err) {
             return [null, err as Error]
         }
     }
 
-    async closeOrder(orderId: string): Promise<SuccessResponse<QueryResult> | ErrorResponse> {
+    async closeOrder(orderId: string): Promise<SuccessResponse<ResultSetHeader> | ErrorResponse> {
         try {
-            const query = 'UPDATE orders SET status = 1 WHERE order_id = ?';
-            const [result, fields] = await this.pool.query(query, [orderId]);
+            const query = 'UPDATE orders SET status = ? WHERE order_id = ?';
+            const [result, fields] = await this.pool.query<ResultSetHeader>(query, [ORDER_STATUS.Complete, orderId]);
+            return [result, null]
+        } catch (err) {
+            return [null, err as Error]
+        }
+    }
+
+    async getOrderByOrderId(orderId: string): Promise<SuccessResponse<RowDataPacket[]> | ErrorResponse> {
+        try {
+            const query = `
+            SELECT order_id, status
+            FROM  orders  
+            WHERE order_id = ?`;
+            const [result, fields] = await this.pool.query<RowDataPacket[]>(query, [orderId]);
+            return [result, null]
+        } catch (err) {
+            return [null, err as Error]
+        }
+    }
+
+    async getOrderItemsByOrderId(orderId: string): Promise<SuccessResponse<RowDataPacket[]> | ErrorResponse> {
+        try {
+            const query = `
+            SELECT id, user_id, user_name, product_name, quantity, remark 
+            FROM  order_items
+            WHERE order_id = ? 
+            ORDER BY user_id`;
+            const [result, fields] = await this.pool.query<RowDataPacket[]>(query, [orderId]);
             return [result, null]
         } catch (err) {
             return [null, err as Error]
@@ -38,7 +66,7 @@ class OrderService extends EventEmitter {
      *
      * @param {string} orderId - The ID of the order.
      */
-    async getOrderWithItemsByOrderId(orderId: string): Promise<SuccessResponse<QueryResult> | ErrorResponse> {
+    async getOrderWithItemsByOrderId(orderId: string): Promise<SuccessResponse<RowDataPacket[]> | ErrorResponse> {
         try {
             const query = `
             SELECT O.order_id, O.status, I.id, I.user_id, I.user_name, I.product_name, I.quantity, I.remark 
@@ -46,7 +74,7 @@ class OrderService extends EventEmitter {
             INNER JOIN order_items I ON I.order_id = O.order_id 
             WHERE O.order_id = ? 
             ORDER BY I.user_id`;
-            const [result, fields] = await this.pool.query(query, [orderId]);
+            const [result, fields] = await this.pool.query<RowDataPacket[]>(query, [orderId]);
             return [result, null]
         } catch (err) {
             return [null, err as Error]
@@ -63,10 +91,10 @@ class OrderService extends EventEmitter {
         }
     };
 
-    async deleteOrderItemById(itemNumber: number | string): Promise<SuccessResponse<QueryResult> | ErrorResponse> {
+    async deleteOrderItemById(itemNumber: number | string): Promise<SuccessResponse<ResultSetHeader> | ErrorResponse> {
         try {
             const query = 'DELETE FROM order_items WHERE id = ?';
-            const [result, fields] = await this.pool.query(query, [itemNumber]);
+            const [result, fields] = await this.pool.query<ResultSetHeader>(query, [itemNumber]);
             return [result, null]
         } catch (err) {
             return [null, err as Error]
@@ -77,21 +105,13 @@ class OrderService extends EventEmitter {
         const t = new Date()
         const month = ('0' + (t.getMonth() + 1)).slice(-2)
         const date = ('0' + t.getDate()).slice(-2)
-        const lastNumber = (Math.floor(Math.random() * 0x10000)).toString(16).toUpperCase()
+        const lastNumber = ('0000' + (Math.floor(Math.random() * 0x10000)).toString(16).toUpperCase()).slice(-4)
         return `PR-${t.getFullYear()}${month}${date}-${(lastNumber)}`
     };
 
-    organizeOrderFlexMessageContent(data: OrderWithItems[]) {
-        if (!data[0]) {
-            return {
-                orderId: '沒有訂單商品',
-                orderStatus: false,
-                userItems: [],
-                itemsQuantity: []
-            }
-        }
-        const { order_id, status } = data[0]
-        const userItems = data.map(({ id, user_id, user_name, product_name, quantity, remark }) => {
+    organizeOrderFlexMessageContent(orderId: string, orderStatus: number, orderItems: Omit<OrderItem, 'order_id' | 'created_at'>[]) {
+
+        const userItems = orderItems.map(({ id, user_id, user_name, product_name, quantity, remark }) => {
             return {
                 id,
                 user_id,
@@ -119,16 +139,23 @@ class OrderService extends EventEmitter {
         })
 
         return {
-            orderId: order_id,
-            orderStatus: Boolean(status),
+            orderId,
+            orderStatus,
             userItems,
             itemsQuantity
         }
     }
 
-    async getLastUnfinishedOrder(): Promise<SuccessResponse<QueryResult> | ErrorResponse> {
+    async getLastUnfinishedOrder(): Promise<SuccessResponse<RowDataPacket[]> | ErrorResponse> {
         try {
             const query = 'SELECT * FROM orders WHERE status = 0 ORDER BY id DESC';
+            const [result, fields] = await this.pool.query<RowDataPacket[]>(query);
+            return [result, null]
+        } catch (err) {
+            return [null, err as Error]
+        }
+    }
+
     async cancelOrderByOrderId(orderId: string): Promise<SuccessResponse<ResultSetHeader> | ErrorResponse> {
         try {
             const query = 'UPDATE orders SET status = 2 WHERE order_id = ? AND status = 0';

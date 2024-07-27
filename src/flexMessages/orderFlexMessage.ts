@@ -1,11 +1,12 @@
 import { FlexComponent, FlexMessage } from "@line/bot-sdk";
 import { OrderItem } from "../@types";
+import { ORDER_STATUS } from "../utils/constant";
 
 
 type UserItems = Pick<OrderItem, 'id' | 'user_id' | 'user_name' | 'product_name' | 'quantity' | 'remark'>
 type itemsQuantity = Pick<UserItems, 'product_name' | 'quantity'>
 
-export default function getOrderFlexMessage(payLoad: { orderId: string, orderStatus: boolean, userItems: UserItems[], itemsQuantity: itemsQuantity[] }): FlexMessage {
+export default function getOrderFlexMessage(payLoad: { orderId: string, orderStatus: ORDER_STATUS, userItems: UserItems[], itemsQuantity: itemsQuantity[] }): FlexMessage {
 
     const userItemsContent: FlexComponent[] = payLoad.userItems.map(item => {
         return {
@@ -75,6 +76,22 @@ export default function getOrderFlexMessage(payLoad: { orderId: string, orderSta
             ]
         }
     })
+
+    const OrderStatusText: { [key: number]: string } = {
+        0: '尚未成立',
+        1: '訂單成立',
+        2: '已取消'
+    }
+
+    const OrderStatusTextColor: { [key: number]: string } = {
+        0: '#f59e42',
+        1: '#02d125',
+        2: '#f2071f'
+    }
+
+    const statusText = OrderStatusText[payLoad.orderStatus];
+
+    const statusTextColor = OrderStatusTextColor[payLoad.orderStatus];
 
     return {
         type: 'flex',
@@ -217,10 +234,11 @@ export default function getOrderFlexMessage(payLoad: { orderId: string, orderSta
                         "contents": [
                             {
                                 "type": "text",
-                                "text": payLoad.orderStatus ? "已成立" : "尚未成立",
-                                "color": payLoad.orderStatus ? "#1DB446" : "#FF0000",
-                                "size": "sm",
-                                "align": "end"
+                                "text": statusText,
+                                "color": statusTextColor,
+                                "size": "md",
+                                "align": "end",
+                                "weight": "bold"
                             }
                         ]
                     }

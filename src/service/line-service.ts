@@ -1,5 +1,5 @@
 import orderService from './order';
-import { ACTIONS } from '../utils/constant';
+import { ACTIONS, ORDER_STATUS } from '../utils/constant';
 
 import {
     webhook,
@@ -85,27 +85,47 @@ class LineService {
             }
 
             this.groupCurrentOrderId[groupId] = null
-            const [results, err2] = await orderService.getOrderWithItemsByOrderId(currentOrderId)
+            const [results, err2] = await orderService.getOrderItemsByOrderId(currentOrderId)
             if (err2) {
                 console.error('訂單搜尋異常:', err2);
                 return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: '訂單搜尋異常' }] });
             }
             // @ts-ignore
-            const messageContent = orderService.organizeOrderFlexMessageContent(results)
+            const messageContent = orderService.organizeOrderFlexMessageContent(currentOrderId, ORDER_STATUS.Complete, results)
             const orderFlexMessage = getOrderFlexMessage(messageContent)
-            orderService.emit('completeOrder', results)
+            orderService.emit('completeOrder', {
+                orderId: currentOrderId,
+                orderItems: results
+            })
             // @ts-ignore
             return this.client.replyMessage({ replyToken, messages: [orderFlexMessage] });
         } else if (action === ACTIONS.OrderSearch) {
             const orderId = textMessage.split(ACTIONS.OrderSearch)[1].trim();
 
-            const [results, err] = await orderService.getOrderWithItemsByOrderId(orderId)
-            if (err) {
-                console.error('訂單搜尋異常:', err);
+            // const [results, err] = await orderService.getOrderWithItemsByOrderId(orderId)
+            // if (err) {
+            //     console.error('訂單搜尋異常:', err);
+            //     return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: '訂單搜尋異常' }] });
+            // }
+            const [
+                [orderResult, orderError],
+                [orderItemsResults, orderItemsError]
+            ] = await Promise.all([
+                orderService.getOrderByOrderId(orderId),
+                orderService.getOrderItemsByOrderId(orderId)
+            ])
+
+            if (orderError || orderItemsError) {
+                console.error('訂單搜尋異常:', orderError || orderItemsError);
                 return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: '訂單搜尋異常' }] });
             }
+
+            if (orderResult.length === 0) return this.client.replyMessage({ replyToken, messages: [{ type: 'text', text: `查無相關訂單，單號: ${orderId}` }] });
+
+            const { order_id, status } = orderResult[0]
+
             // @ts-ignore
-            const messageContent = orderService.organizeOrderFlexMessageContent(results)
+            const messageContent = orderService.organizeOrderFlexMessageContent(order_id, status, orderItemsResults)
             const orderFlexMessage = getOrderFlexMessage(messageContent)
             // @ts-ignore
             return this.client.replyMessage({ replyToken, messages: [orderFlexMessage] });

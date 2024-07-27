@@ -1,4 +1,5 @@
 import { FlexMessage } from "@line/bot-sdk";
+import { ACTIONS } from "../utils/constant";
 
 export default function getHelpFlexMessage(): FlexMessage {
     return {
@@ -57,7 +58,7 @@ export default function getHelpFlexMessage(): FlexMessage {
                                 "contents": [
                                     {
                                         "type": "text",
-                                        "text": "#新購物",
+                                        "text": ACTIONS.NewOrder,
                                         "size": "xs",
                                         "color": "#111111",
                                         "flex": 0,
@@ -80,7 +81,7 @@ export default function getHelpFlexMessage(): FlexMessage {
                                 "contents": [
                                     {
                                         "type": "text",
-                                        "text": "#訂單成立",
+                                        "text": ACTIONS.OrderComplete,
                                         "size": "xs",
                                         "color": "#111111",
                                         "flex": 0,
@@ -103,7 +104,30 @@ export default function getHelpFlexMessage(): FlexMessage {
                                 "contents": [
                                     {
                                         "type": "text",
-                                        "text": "#查詢 [訂單編號]",
+                                        "text": `${ACTIONS.OrderCancel} [訂單編號]`,
+                                        "size": "xs",
+                                        "color": "#111111",
+                                        "flex": 0,
+                                        "weight": "bold",
+                                        "margin": "none"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": "取消未成立訂單",
+                                        "size": "sm",
+                                        "color": "#555555",
+                                        "margin": "none",
+                                        "align": "end"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": `${ACTIONS.OrderSearch} [訂單編號]`,
                                         "size": "xs",
                                         "color": "#111111",
                                         "flex": 0,
@@ -126,7 +150,7 @@ export default function getHelpFlexMessage(): FlexMessage {
                                 "contents": [
                                     {
                                         "type": "text",
-                                        "text": "#刪除 [項目編號]",
+                                        "text": `${ACTIONS.ItemDelete} [項目編號]`,
                                         "size": "xs",
                                         "color": "#111111",
                                         "flex": 0,
