@@ -1,6 +1,17 @@
-declare namespace Express {
-    export interface Request {
-        rawBody: string
+declare global {
+    namespace NodeJS {
+        interface ProcessEnv {
+            NODE_ENV: 'development' | 'production' | 'test';
+            PORT: string;
+            DB_HOST: string;
+            DB_USER: string;
+            DB_PASSWORD: string;
+            DB_NAME: string;
+            LINE_ACCESS_TOKEN: string;
+            LINE_CHANNEL_SECRET: string;
+            SPREADSHEET_ID: string;
+            SHEET_NAME: string;
+        }
     }
 }
 
