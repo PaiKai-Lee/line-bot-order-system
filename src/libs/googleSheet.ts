@@ -22,15 +22,12 @@ class GoogleSheets {
 
     async getSheetInstance() {
         if (this.sheets) return this.sheets;
-
-        const content = await fs.readFile(this.CREDENTIALS_PATH, { encoding: 'utf-8' });
-        const keys = JSON.parse(content);
-        const client = new Auth.JWT({
-            email: keys.client_email,
-            key: keys.private_key,
+        // Create a new JWT client using the key file downloaded from the Google Developer Console
+        const auth = new Auth.JWT({
+            keyFile: this.CREDENTIALS_PATH,
             scopes: this.SCOPES,
         })
-        this.sheets = google.sheets({ version: 'v4', auth: client });
+        this.sheets = google.sheets({ version: 'v4', auth });
         return this.sheets
     }
 
