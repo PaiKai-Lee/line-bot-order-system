@@ -26,7 +26,12 @@ class LineService {
 
     constructor(client: messagingApi.MessagingApiClient) {
         this.client = client;
-        // 重啟時去確認訂單是不是已完成，如果不是就回復到記憶體快取
+    }
+
+    /**
+     * 初始化，確認訂單是不是已完成，如果不是就恢復到記憶體快取
+     */
+    async init (){
         orderService.getLastUnfinishedOrder().then(([lastUnfinishedOrders, err]) => {
             if (err) {
                 console.log(err);
